@@ -1,5 +1,7 @@
 use std::{fs::File, io::Write};
 
+use crate::color::Color;
+
 pub struct PPMImage {
     width: usize,
     height: usize,
@@ -31,17 +33,8 @@ impl PPMImage {
         for height in 0..self.height {
             println!("Scanlines remaining: {}", self.height - height);
             for width in 0..self.width {
-                let red = width as f64 / (self.width - 1) as f64;
-                let green = height as f64 / (self.height - 1) as f64;
-                let blue = 0;
-
-                file.write_fmt(format_args!(
-                    "{} {} {}\n",
-                    red * self.color_range as f64,
-                    green * self.color_range as f64,
-                    blue * self.color_range
-                ))
-                .unwrap()
+                let color = Color::new((width as f64 / (self.width - 1) as f64 * 256.0) as u8, (height as f64 / (self.height) as f64 * 256.0) as u8, 0);
+                color.write(file);
             }
         }
         println!("Done");
