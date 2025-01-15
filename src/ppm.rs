@@ -29,6 +29,7 @@ impl PPMImage {
             .unwrap();
 
         for height in 0..self.height {
+            println!("Scanlines remaining: {}", self.height - height);
             for width in 0..self.width {
                 let red = width as f64 / (self.width - 1) as f64;
                 let green = height as f64 / (self.height - 1) as f64;
@@ -43,5 +44,6 @@ impl PPMImage {
                 .unwrap()
             }
         }
+        println!("Done");
     }
 }
