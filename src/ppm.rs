@@ -14,7 +14,7 @@ impl Default for PPMImage {
 }
 
 impl PPMImage {
-    fn new(width: usize, height: usize) -> Self {
+    pub fn new(width: usize, height: usize) -> Self {
         PPMImage { width, height }
     }
 
