@@ -11,13 +11,21 @@ pub struct Color {
     blue: f64,
 }
 
+fn linear_to_gamma(color: f64) -> f64 {
+    if color > 0.0 {
+        color.sqrt()
+    } else {
+        0.0
+    }
+}
+
 impl Color {
     pub fn write(&self, file: &mut File) {
         file.write_fmt(format_args!(
             "{} {} {}\n",
-            (self.red * 255.0).round(),
-            (self.green * 255.0).round(),
-            (self.blue * 255.0).round()
+            (linear_to_gamma(self.red.clamp(0.000, 0.999)) * 255.0).round(),
+            (linear_to_gamma(self.green.clamp(0.000, 0.999)) * 255.0).round(),
+            (linear_to_gamma(self.blue.clamp(0.000, 0.999)) * 255.0).round()
         ))
         .unwrap()
     }

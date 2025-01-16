@@ -4,6 +4,7 @@ use color::Color;
 use hitteble::{HitRecord, Hitteble, HittebleList};
 use nalgebra::{UnitVector3, Vector3};
 use plane::Plane;
+use rand::{random, thread_rng, Rng};
 use sphere::Sphere;
 
 mod color;
@@ -23,7 +24,7 @@ fn main() {
 
     world.add(Box::new(Sphere::new(Vector3::new(0.0, 0.0, -1.0), 0.5)));
     world.add(Box::new(Plane::new(
-        Vector3::new(0.0, -1.0, 0.0),
+        Vector3::new(0.0, -0.5, 0.0),
         Vector3::new(1.0, 0.0, 0.0),
         Vector3::new(0.0, 0.0, 1.0),
     )));
@@ -32,6 +33,10 @@ fn main() {
     let viewport_height = 2.0;
     let viewport_width = viewport_height * (image_width as f64 / image_height as f64);
     let camera_center = Vector3::new(0.0, 0.0, 0.0);
+
+    let depth = 10;
+    let samples_per_pixel = 10;
+    let pixel_sample_scale = 1.0 / samples_per_pixel as f64;
 
     let viewport_u = Vector3::new(viewport_width, 0.0, 0.0);
     let viewport_v = Vector3::new(0.0, -viewport_height, 0.0);
@@ -54,16 +59,21 @@ fn main() {
     for height in 0..image_height {
         println!("Scanlines remaining: {}", image_height - height);
         for width in 0..image_width {
-            let pixel_center = pixel00_loc
-                + (pixel_delta_u.scale(width as f64))
-                + (pixel_delta_v.scale(height as f64));
-            let ray_direction = pixel_center - camera_center;
+            let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+            for _ in 0..samples_per_pixel {
+                let offset = Vector3::new(random::<f64>() - 0.5, random::<f64>() - 0.5, 0.0);
+                let pixel_sample = pixel00_loc
+                    + ((pixel_delta_u).scale(width as f64 + offset.x))
+                    + (pixel_delta_v.scale(height as f64 + offset.y));
 
-            let ray = Ray::new(camera_center, ray_direction);
+                let ray_direction = pixel_sample - camera_center;
 
-            let color = ray_color(&ray, &world);
+                let ray = Ray::new(camera_center, ray_direction);
 
-            image.push(color);
+                pixel_color = pixel_color + ray_color(&ray, depth, &world);
+            }
+
+            image.push(pixel_color * pixel_sample_scale);
         }
     }
 
@@ -72,12 +82,16 @@ fn main() {
     ppm.print(&mut file, image);
 }
 
-fn ray_color(ray: &Ray, world: &impl Hitteble) -> Color {
+fn ray_color(ray: &Ray, depth: i32, world: &impl Hitteble) -> Color {
+    if depth <= 0 {
+        return Color::new(0.0, 0.0, 0.0);
+    }
+
     let mut record = HitRecord::default();
 
-    if world.hit(ray, 0.0, f64::MAX, &mut record) {
-        let value = 0.5 * (record.normal + Vector3::new(1.0, 1.0, 1.0));
-        return Color::new(value.x, value.y, value.z);
+    if world.hit(ray, 0.001, f64::MAX, &mut record) {
+        let direction = random_on_hemisphere(record.normal);
+        return 0.5 * ray_color(&Ray::new(record.point, direction), depth - 1, world);
     }
 
     let unit_direction = UnitVector3::new_normalize(ray.direction);
@@ -97,5 +111,36 @@ impl Ray {
 
     fn at(&self, t: f64) -> Vector3<f64> {
         self.origin + t * self.direction
+    }
+}
+
+fn random_vector() -> Vector3<f64> {
+    Vector3::new(random(), random(), random())
+}
+
+fn random_vector_range(min: f64, max: f64) -> Vector3<f64> {
+    Vector3::new(
+        thread_rng().gen_range(min..max),
+        thread_rng().gen_range(min..max),
+        thread_rng().gen_range(min..max),
+    )
+}
+
+fn random_unit_vector() -> Vector3<f64> {
+    loop {
+        let p = random_vector_range(-1.0, 1.0);
+        let lensq = p.magnitude_squared();
+        if lensq <= 1.0 {
+            return p / lensq.sqrt();
+        }
+    }
+}
+
+fn random_on_hemisphere(normal: Vector3<f64>) -> Vector3<f64> {
+    let on_unit_sphere = random_unit_vector();
+    if on_unit_sphere.dot(&normal) > 0.0 {
+        on_unit_sphere
+    } else {
+        -on_unit_sphere
     }
 }
