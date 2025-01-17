@@ -15,7 +15,7 @@ mod sphere;
 
 fn main() {
     let aspect_ratio = 16.0 / 9.0;
-    let image_width = 400;
+    let image_width = 800;
 
     let mut image_height = (image_width as f64 / aspect_ratio) as i32;
     image_height = if image_height < 1 { 1 } else { image_height };
@@ -28,6 +28,8 @@ fn main() {
         Vector3::new(1.0, 0.0, 0.0),
         Vector3::new(0.0, 0.0, 1.0),
     )));
+
+    let light = vec![Vector3::new(10.0, 10.0, 5.0)];
 
     let focal_length = 1.0;
     let viewport_height = 2.0;
@@ -70,7 +72,7 @@ fn main() {
 
                 let ray = Ray::new(camera_center, ray_direction);
 
-                pixel_color = pixel_color + ray_color(&ray, depth, &world);
+                pixel_color = pixel_color + ray_color(&ray, depth, &world, &light);
             }
 
             image.push(pixel_color * pixel_sample_scale);
@@ -82,21 +84,35 @@ fn main() {
     ppm.print(&mut file, image);
 }
 
-fn ray_color(ray: &Ray, depth: i32, world: &impl Hitteble) -> Color {
+fn ray_color(ray: &Ray, depth: i32, world: &impl Hitteble, light: &Vec<Vector3<f64>>) -> Color {
     if depth <= 0 {
         return Color::new(0.0, 0.0, 0.0);
     }
 
     let mut record = HitRecord::default();
 
-    if world.hit(ray, 0.001, f64::MAX, &mut record) {
+    let color_from_scatter = if world.hit(ray, 0.001, f64::MAX, &mut record) {
         let direction = random_on_hemisphere(record.normal);
-        return 0.5 * ray_color(&Ray::new(record.point, direction), depth - 1, world);
-    }
+        0.5 * ray_color(&Ray::new(record.point, direction), depth - 1, world, light)
+    } else {
+        Color::new(0.0, 0.0, 0.0)
+    };
 
-    let unit_direction = UnitVector3::new_normalize(ray.direction);
-    let a = 0.5 * (unit_direction.y + 1.0);
-    (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0)
+    let ray_to_light = Ray::new(record.point, light[0] - record.point );
+    let color_from_light = if record.distance != 0.0 && !world.hit(&ray_to_light, 0.001, f64::MAX, &mut HitRecord::default()) {
+        // let unit_direction = UnitVector3::new_normalize(ray.direction);
+        // let a = 0.5 * (unit_direction.y + 1.0);
+        // (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0)
+        Color::new(0.9, 0.9, 0.7)
+    } else {
+        Color::new(0.0, 0.0, 0.0)
+    };
+
+    color_from_scatter + color_from_light
+
+    // let unit_direction = UnitVector3::new_normalize(ray.direction);
+    // let a = 0.5 * (unit_direction.y + 1.0);
+    // (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0)
 }
 
 struct Ray {
