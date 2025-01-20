@@ -1,4 +1,5 @@
 use std::fs::File;
+use nalgebra::UnitVector3;
 use rand::thread_rng;
 use rand::Rng;
 
@@ -11,6 +12,7 @@ pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: i32,
     pub samples_per_pixel: i32,
+    pub max_depth: i32,
     image_height: i32,
     center: Vector3<f64>,
     pixel00_loc: Vector3<f64>,
@@ -25,6 +27,7 @@ impl Default for Camera {
             aspect_ratio: 16.0 / 9.0,
             image_width: 400,
             samples_per_pixel: 10,
+            max_depth: 10,
             image_height: 0,
             center: Vector3::default(),
             pixel00_loc: Vector3::default(),
@@ -39,8 +42,6 @@ impl Camera {
     pub fn render(&mut self, world: HittebleList) {
         self.initialize();
 
-        let depth = 10;
-
         let mut file = File::create("image.ppm").unwrap();
         let ppm = crate::ppm::PPMImage::new(self.image_width as usize, self.image_height as usize);
 
@@ -53,7 +54,7 @@ impl Camera {
                 for _ in 0..self.samples_per_pixel {
                     let ray = self.get_ray(width, height);
 
-                    pixel_color = pixel_color + self.ray_color(&ray, depth, &world);
+                    pixel_color = pixel_color + self.ray_color(&ray, self.max_depth, &world);
                 }
 
                 image.push(pixel_color * self.pixel_sample_scale);
@@ -98,13 +99,13 @@ impl Camera {
 
         let mut record = HitRecord::default();
 
-        let color_from_scatter = if world.hit(ray, 0.001, f64::MAX, &mut record) {
-            let direction = random_on_hemisphere(record.normal);
-            0.5 * self.ray_color(&Ray::new(record.point, direction), depth - 1, world)
-        } else {
-            Color::new(0.0, 0.0, 0.0)
-        };
-
+        // let color_from_scatter = if world.hit(ray, 0.001, f64::MAX, &mut record) {
+        //     let direction = random_on_hemisphere(record.normal);
+        //     0.5 * self.ray_color(&Ray::new(record.point, direction), depth - 1, world)
+        // } else {
+        //     Color::new(0.0, 0.0, 0.0)
+        // };
+        //
         // let ray_to_light = Ray::new(record.point, light[0] - record.point );
         // let color_from_light = if record.distance != 0.0 && !world.hit(&ray_to_light, 0.001, f64::MAX, &mut HitRecord::default()) {
         //     // let unit_direction = UnitVector3::new_normalize(ray.direction);
@@ -116,11 +117,14 @@ impl Camera {
         // };
 
         // color_from_scatter + color_from_light
-        color_from_scatter
+        if world.hit(ray, 0.001, f64::MAX, &mut record) {
+            let direction = record.normal + random_on_hemisphere(record.normal);
+            return 0.5 * self.ray_color(&Ray::new(record.point, direction), depth - 1, world);
+        }
 
-        // let unit_direction = UnitVector3::new_normalize(ray.direction);
-        // let a = 0.5 * (unit_direction.y + 1.0);
-        // (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0)
+        let unit_direction = UnitVector3::new_normalize(ray.direction);
+        let a = 0.5 * (unit_direction.y + 1.0);
+        (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0)
     }
 
     fn get_ray(&self, width: i32, height: i32) -> Ray {
@@ -151,7 +155,7 @@ fn random_unit_vector() -> Vector3<f64> {
     loop {
         let p = random_vector_range(-1.0, 1.0);
         let lensq = p.magnitude_squared();
-        if lensq <= 1.0 {
+        if 1e-160 < lensq && lensq <= 1.0 {
             return p / lensq.sqrt();
         }
     }
