@@ -118,8 +118,11 @@ impl Camera {
 
         // color_from_scatter + color_from_light
         if world.hit(ray, 0.001, f64::MAX, &mut record) {
-            let direction = record.normal + random_on_hemisphere(record.normal);
-            return 0.5 * self.ray_color(&Ray::new(record.point, direction), depth - 1, world);
+            if let Some((scattered, attenuation)) = record.material.scatter(ray, &record) {
+                return attenuation * self.ray_color(&scattered, depth -1, world);
+            }
+
+            return Color::new(0.0, 0.0, 0.0);
         }
 
         let unit_direction = UnitVector3::new_normalize(ray.direction);
@@ -151,7 +154,7 @@ fn random_vector_range(min: f64, max: f64) -> Vector3<f64> {
     )
 }
 
-fn random_unit_vector() -> Vector3<f64> {
+pub fn random_unit_vector() -> Vector3<f64> {
     loop {
         let p = random_vector_range(-1.0, 1.0);
         let lensq = p.magnitude_squared();

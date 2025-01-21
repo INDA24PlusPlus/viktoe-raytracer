@@ -1,3 +1,4 @@
+use crate::material::Material;
 use crate::HitRecord;
 use crate::Hitteble;
 use crate::Ray;
@@ -6,11 +7,12 @@ use nalgebra::Vector3;
 pub struct Sphere {
     center: Vector3<f64>,
     radius: f64,
+    material: Material
 }
 
 impl Sphere {
-    pub fn new(center: Vector3<f64>, radius: f64) -> Self {
-        Sphere { center, radius }
+    pub fn new(center: Vector3<f64>, radius: f64, material: Material) -> Self {
+        Sphere { center, radius, material}
     }
 }
 
@@ -40,6 +42,7 @@ impl Hitteble for Sphere {
         record.point = ray.at(record.distance);
         let outward_normal = (record.point - self.center) / self.radius;
         record.set_face_normal(ray, outward_normal);
+        record.material = self.material.clone();
 
         true
     }

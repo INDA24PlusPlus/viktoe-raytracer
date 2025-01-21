@@ -1,6 +1,8 @@
+use std::rc::Rc;
+
 use nalgebra::Vector3;
 
-use crate::Ray;
+use crate::{material::Material, Ray};
 
 #[derive(Default)]
 pub struct HittebleList {
@@ -39,6 +41,7 @@ pub trait Hitteble {
 pub struct HitRecord {
     pub point: Vector3<f64>,
     pub normal: Vector3<f64>,
+    pub material: Material,
     pub distance: f64,
     pub front_face: bool,
 }

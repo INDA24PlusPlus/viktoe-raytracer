@@ -1,25 +1,48 @@
-
 use camera::Camera;
+use color::Color;
 use hitteble::{HitRecord, Hitteble, HittebleList};
+use material::Material;
 use nalgebra::Vector3;
 use plane::Plane;
 use sphere::Sphere;
+use material::MaterialType::{Labertian, Metal};
 
+mod camera;
 mod color;
 mod hitteble;
+mod material;
 mod plane;
 mod ppm;
 mod sphere;
-mod camera;
 
 fn main() {
     let mut world = HittebleList::default();
 
-    world.add(Box::new(Sphere::new(Vector3::new(0.0, 0.0, -1.0), 0.5)));
+    let material_ground = Material::new(Color::new(0.8, 0.8, 0.0), Labertian);
+    let material_center = Material::new(Color::new(0.1, 0.2, 0.5), Labertian);
+    let material_left = Material::new(Color::new(0.8, 0.8, 0.8), Metal);
+    let material_right = Material::new(Color::new(0.8, 0.6, 0.2), Metal);
+
+    world.add(Box::new(Sphere::new(
+        Vector3::new(0.0, 0.0, -1.0),
+        0.5,
+        material_center
+    )));
+    world.add(Box::new(Sphere::new(
+        Vector3::new(-1.0, 0.0, -1.0),
+        0.5,
+        material_left
+    )));
+    world.add(Box::new(Sphere::new(
+        Vector3::new(1.0, 0.0, -1.0),
+        0.5,
+        material_right
+    )));
     world.add(Box::new(Plane::new(
         Vector3::new(0.0, -0.5, 0.0),
         Vector3::new(1.0, 0.0, 0.0),
         Vector3::new(0.0, 0.0, 1.0),
+        material_ground
     )));
 
     let mut camera = Camera::default();

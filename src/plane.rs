@@ -1,3 +1,4 @@
+use crate::material::Material;
 use crate::HitRecord;
 use crate::Hitteble;
 use crate::Ray;
@@ -7,11 +8,12 @@ pub struct Plane {
     point: Vector3<f64>,
     vec1: Vector3<f64>,
     vec2: Vector3<f64>,
+    material: Material,
 }
 
 impl Plane {
-    pub fn new(point: Vector3<f64>, vec1: Vector3<f64>, vec2: Vector3<f64>) -> Self {
-        Plane { point, vec1, vec2 }
+    pub fn new(point: Vector3<f64>, vec1: Vector3<f64>, vec2: Vector3<f64>, material: Material) -> Self {
+        Plane { point, vec1, vec2, material}
     }
 }
 
@@ -33,6 +35,7 @@ impl Hitteble for Plane {
         record.point = ray.at(record.distance);
         let outward_normal = normal;
         record.set_face_normal(ray, outward_normal);
+        record.material = self.material.clone();
 
         true
     }
