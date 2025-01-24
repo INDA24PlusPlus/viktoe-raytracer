@@ -5,7 +5,7 @@ use material::Material;
 use nalgebra::Vector3;
 use plane::Plane;
 use sphere::Sphere;
-use material::MaterialType::{Labertian, Metal};
+use material::MaterialType::{Labertian, Metal, DiffuseLight};
 
 mod camera;
 mod color;
@@ -20,7 +20,7 @@ fn main() {
 
     let material_ground = Material::new(Color::new(0.8, 0.8, 0.0), Labertian);
     let material_center = Material::new(Color::new(0.1, 0.2, 0.5), Labertian);
-    let material_left = Material::new(Color::new(0.8, 0.8, 0.8), Metal);
+    let material_left = Material::new(Color::new(0.8, 0.8, 0.8), DiffuseLight);
     let material_right = Material::new(Color::new(0.8, 0.6, 0.2), Metal);
 
     world.add(Box::new(Sphere::new(

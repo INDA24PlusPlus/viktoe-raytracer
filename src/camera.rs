@@ -99,35 +99,23 @@ impl Camera {
 
         let mut record = HitRecord::default();
 
-        // let color_from_scatter = if world.hit(ray, 0.001, f64::MAX, &mut record) {
-        //     let direction = random_on_hemisphere(record.normal);
-        //     0.5 * self.ray_color(&Ray::new(record.point, direction), depth - 1, world)
-        // } else {
-        //     Color::new(0.0, 0.0, 0.0)
-        // };
-        //
-        // let ray_to_light = Ray::new(record.point, light[0] - record.point );
-        // let color_from_light = if record.distance != 0.0 && !world.hit(&ray_to_light, 0.001, f64::MAX, &mut HitRecord::default()) {
-        //     // let unit_direction = UnitVector3::new_normalize(ray.direction);
-        //     // let a = 0.5 * (unit_direction.y + 1.0);
-        //     // (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0)
-        //     Color::new(0.9, 0.9, 0.7)
-        // } else {
-        //     Color::new(0.0, 0.0, 0.0)
-        // };
-
-        // color_from_scatter + color_from_light
-        if world.hit(ray, 0.001, f64::MAX, &mut record) {
-            if let Some((scattered, attenuation)) = record.material.scatter(ray, &record) {
-                return attenuation * self.ray_color(&scattered, depth -1, world);
-            }
-
+        if !world.hit(ray, 0.001, f64::MAX, &mut record) {
+            // let unit_direction = UnitVector3::new_normalize(ray.direction);
+            // let a = 0.5 * (unit_direction.y + 1.0);
+            // return (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0);
             return Color::new(0.0, 0.0, 0.0);
         }
 
-        let unit_direction = UnitVector3::new_normalize(ray.direction);
-        let a = 0.5 * (unit_direction.y + 1.0);
-        (1.0 - a) * Color::new(1.0, 1.0, 1.0) + a * Color::new(0.5, 0.7, 1.0)
+        let color_from_emission = record.material.emitted();
+
+        if let Some((scattered, attenuation)) = record.material.scatter(ray, &record) {
+            let color_from_scatter = attenuation * self.ray_color(&scattered, depth -1, world);
+
+            color_from_emission + color_from_scatter
+        } else {
+            color_from_emission
+        }
+
     }
 
     fn get_ray(&self, width: i32, height: i32) -> Ray {

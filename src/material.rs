@@ -11,7 +11,8 @@ pub struct Material {
 #[derive(Default, Clone)]
 pub enum MaterialType {
     #[default] Labertian,
-    Metal
+    Metal,
+    DiffuseLight,
 }
 
 impl Material {
@@ -38,7 +39,14 @@ impl Material {
                 let scattered = Ray::new(record.point, reflected);
                 let attenuation = self.albedo.clone();
                 Some((scattered, attenuation))
-            }
+            },
+            _ => None,
+        }
+    }
+    pub fn emitted(&self) -> Color {
+        match self.material_type {
+            MaterialType::DiffuseLight => self.albedo.clone(),
+            _ => Color::new(0.0, 0.0, 0.0)
         }
     }
 }
